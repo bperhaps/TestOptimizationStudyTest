@@ -16,11 +16,9 @@ public class Post {
 
     private String content;
 
-    protected Post() {}
+    private String ect;
 
-    public Post(String title, String content) {
-        this(null, title, content);
-    }
+    protected Post() {}
 
     public Post(Long id, String title, String content) {
         this.id = id;
@@ -38,6 +36,10 @@ public class Post {
 
     public String getContent() {
         return content;
+    }
+
+    public String getEct() {
+        return ect;
     }
 
     public void updateTitle(String title) {

@@ -1,5 +1,11 @@
 package com.example.testoptimizationstudytest.config;
 
+import com.example.testoptimizationstudytest.config.db_seperate.DataSourceSelector;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,8 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.sql.DataSource;
 import org.hibernate.Session;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.orm.hibernate5.LocalSessionFactoryBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -17,15 +27,42 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class DatabaseCleaner implements InitializingBean {
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    @Autowired
+    private SchemaGenerator schemaGenerator;
+
+    @Autowired
+    DataSourceSelector dataSourceSelector;
+
+    @Autowired
+    private DataSource dataSources;
 
     private List<String> tableNames;
 
+    public void execute() {
+        try {
+            dataSourceSelector.toWrite();
+            cleanUpDatabase(dataSources.getConnection());
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     @Override
-    public void afterPropertiesSet() {
-        entityManager.unwrap(Session.class)
-            .doWork(this::extractTableNames);
+    public void afterPropertiesSet() throws SQLException {
+        String ddl = schemaGenerator.generate();
+
+        dataSourceSelector.toRead();
+        createTables(dataSources.getConnection(), ddl);
+
+        dataSourceSelector.toWrite();
+        createTables(dataSources.getConnection(), ddl);
+
+        extractTableNames(dataSources.getConnection());
+    }
+
+    public void createTables(Connection conn, String ddl) throws SQLException {
+        Statement statement = conn.createStatement();
+        statement.executeUpdate(ddl);
     }
 
     private void extractTableNames(Connection conn) throws SQLException {
@@ -40,11 +77,6 @@ public class DatabaseCleaner implements InitializingBean {
         }
 
         this.tableNames = tableNames;
-    }
-
-    public void execute() {
-        entityManager.unwrap(Session.class)
-            .doWork(this::cleanUpDatabase);
     }
 
     private void cleanUpDatabase(Connection conn) throws SQLException {

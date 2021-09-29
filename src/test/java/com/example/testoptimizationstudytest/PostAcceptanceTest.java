@@ -2,7 +2,10 @@ package com.example.testoptimizationstudytest;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.registerCustomDateFormat;
 
+import com.example.testoptimizationstudytest.config.db_seperate.DataSourceSelector;
 import com.example.testoptimizationstudytest.presentation.dto.PostRequest;
 import com.example.testoptimizationstudytest.presentation.dto.PostResponse;
 import io.restassured.RestAssured;
@@ -11,13 +14,34 @@ import io.restassured.response.Response;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.http.entity.ContentType;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 public class PostAcceptanceTest extends AcceptanceTest {
 
+    @Autowired
+    DataSourceSelector dataSourceSelector;
+
+    private static boolean flag = false;
+
+    @Override
+    @BeforeEach
+    void setUp() {
+        super.setUp();
+
+        if(!flag) {
+            dataSourceSelector.toRead();
+            bulkCreatePost(100);
+            flag = true;
+        }
+    }
+
     @Test
     void createPost100() {
+        dataSourceSelector.toWrite();
         List<PostResponse> postResponses = bulkCreatePost(100);
 
         assertThat(postResponses).hasSize(100);
@@ -25,7 +49,7 @@ public class PostAcceptanceTest extends AcceptanceTest {
 
     @Test
     void findPostById_1() {
-        bulkCreatePost(100);
+        dataSourceSelector.toRead();
 
         PostResponse postResponse = findPostById(1L);
         assertThat(postResponse.getId()).isEqualTo(1);
@@ -33,7 +57,7 @@ public class PostAcceptanceTest extends AcceptanceTest {
 
     @Test
     void findPostById_2() {
-        bulkCreatePost(100);
+        dataSourceSelector.toRead();
 
         PostResponse postResponse = findPostById(2L);
         assertThat(postResponse.getId()).isEqualTo(2);
@@ -41,7 +65,7 @@ public class PostAcceptanceTest extends AcceptanceTest {
 
     @Test
     void findPostById_3() {
-        bulkCreatePost(100);
+        dataSourceSelector.toRead();
 
         PostResponse postResponse = findPostById(3L);
         assertThat(postResponse.getId()).isEqualTo(3);
@@ -49,6 +73,7 @@ public class PostAcceptanceTest extends AcceptanceTest {
 
     @Test
     void updateById_1() {
+        dataSourceSelector.toWrite();
         bulkCreatePost(100);
         PostRequest update = new PostRequest("updatedTitle", "updatedContent");
 
@@ -61,6 +86,7 @@ public class PostAcceptanceTest extends AcceptanceTest {
 
     @Test
     void deleteById_1() {
+        dataSourceSelector.toWrite();
         bulkCreatePost(100);
         PostRequest update = new PostRequest("updatedTitle", "updatedContent");
 
