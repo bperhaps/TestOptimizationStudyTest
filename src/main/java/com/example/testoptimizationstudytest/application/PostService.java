@@ -19,12 +19,27 @@ public class PostService {
         String title = postRequest.getTitle();
         String content = postRequest.getContent();
 
-        Post save = postRepository.save(new Post(null, title, content));
+        Post post = postRepository.save(new Post(null, title, content));
 
-        return new PostResponse(
-            save.getId(),
-            save.getTitle(),
-            save.getTitle()
-        );
+        return PostResponse.from(post);
+    }
+
+    public PostResponse findById(Long id) {
+        Post post = postRepository.findById(id).orElseThrow();
+
+        return PostResponse.from(post);
+    }
+
+    public PostResponse update(Long id, PostRequest postRequest) {
+        Post post = postRepository.findById(id).orElseThrow();
+
+        post.updateTitle(postRequest.getTitle());
+        post.updateContent(postRequest.getContent());
+
+        return PostResponse.from(post);
+    }
+
+    public void delete(Long id) {
+        postRepository.deleteById(id);
     }
 }
