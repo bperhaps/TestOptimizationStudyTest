@@ -5,8 +5,10 @@ import com.example.testoptimizationstudytest.domain.post.repository.PostReposito
 import com.example.testoptimizationstudytest.presentation.dto.PostRequest;
 import com.example.testoptimizationstudytest.presentation.dto.PostResponse;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class PostService {
 
     private final PostRepository postRepository;
@@ -24,6 +26,7 @@ public class PostService {
         return PostResponse.from(post);
     }
 
+    @Transactional(readOnly = true)
     public PostResponse findById(Long id) {
         Post post = postRepository.findById(id).orElseThrow();
 
